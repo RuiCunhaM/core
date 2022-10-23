@@ -1,6 +1,7 @@
 import logging
 import tkinter as tk
 import webbrowser
+import networkx as nx
 from functools import partial
 from pathlib import Path
 from tkinter import filedialog, messagebox
@@ -207,6 +208,7 @@ class Menubar(tk.Menu):
         menu.add_command(label="Find", accelerator="Ctrl+F", command=self.click_find)
         self.app.master.bind_all("<Control-f>", self.click_find)
         menu.add_command(label="Auto Grid", command=self.click_autogrid)
+        menu.add_command(label="Kamada Kawai Layout", command=self.click_kamada)
         menu.add_command(label="IP Addresses", command=self.click_ip_config)
         menu.add_command(label="MAC Addresses", command=self.click_mac_config)
         self.add_cascade(label="Tools", menu=menu)
@@ -471,6 +473,29 @@ class Menubar(tk.Menu):
             x = (col * layout_size) + padding
             y = (row * layout_size) + padding
             node.move(x, y)
+
+    def click_kamada(self) -> None:
+        width, height = self.manager.current().current_dimensions
+        half_width, half_height = int(width / 2), int(height / 2)
+        padding = (images.NODE_SIZE / 2) + 15
+        canvas = self.manager.current()
+        nodes = canvas.nodes
+        G = nx.Graph()
+        for node in nodes.values():
+            for edge in node.edges:
+                G.add_edge(edge.src.id, edge.dst.id)
+        pos = nx.kamada_kawai_layout(G)
+        for id, coords in pos.items():
+            x = int(
+                max(min(coords[0] * half_width + half_width, width - padding), padding)
+            )
+            y = int(
+                max(
+                    min(coords[1] * half_height + half_height, height - padding),
+                    padding,
+                )
+            )
+            nodes[id].move(x, y)
 
     def click_infobar_change(self) -> None:
         if self.app.show_infobar.get():
